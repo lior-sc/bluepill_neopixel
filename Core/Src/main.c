@@ -31,8 +31,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define NEOPIXEL_NUM 16
-#define NEOPIXEL_BUF_SIZE NEOPIXEL_NUM * WS2812_MSG_LENGTH + 2
+#define NEOPIXEL_NUM 10
+#define NEOPIXEL_DMA_BUF_SIZE NEOPIXEL_NUM * WS2812_MSG_LENGTH + 2 //
 #define NPX_TIM_FREQ_HZ 72e6 /* Each clock tick on timer 1 takes around 11.904 nanoseconds */
 #define NPX_TIM_CHANNEL TIM_CHANNEL_1
 #define NPX_HTIM htim2
@@ -57,17 +57,16 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
+/* USER CODE BEGIN PFP */
 void full_led_pulse(WS2812_RGBTypeDef color);
 void circular_rainbow(double rotation_time, int rotations);
-/* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 WS2812_HandleTypeDef neopixel;
-int neopixel_dma_buf_size = NEOPIXEL_BUF_SIZE;
-uint16_t neopixel_dma_buf[NEOPIXEL_BUF_SIZE] = {0};
+size_t neopixel_dma_buf_size = NEOPIXEL_DMA_BUF_SIZE;
+uint16_t neopixel_dma_buf[NEOPIXEL_DMA_BUF_SIZE] = {0};
 
 /* USER CODE END 0 */
 
@@ -103,9 +102,9 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  ws2812_init(&neopixel, &NPX_HTIM, NPX_TIM_CHANNEL, NPX_TIM_FREQ_HZ, neopixel_dma_buf, NEOPIXEL_BUF_SIZE, NEOPIXEL_NUM);
+  ws2812_init(&neopixel, &NPX_HTIM, NPX_TIM_CHANNEL, NPX_TIM_FREQ_HZ, neopixel_dma_buf, NEOPIXEL_DMA_BUF_SIZE, NEOPIXEL_NUM);
 
-  WS2812_RGBTypeDef color = {0xFF,0x00,0xFF};
+//  WS2812_RGBTypeDef color = {0xFF,0x00,0xFF};
   ws2812_reset(&neopixel);
 
   circular_rainbow(5,1);
@@ -117,8 +116,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	full_led_pulse(color);
+	circular_rainbow(20, 1);
 
     /* USER CODE END WHILE */
 
@@ -291,19 +289,22 @@ void full_led_pulse(WS2812_RGBTypeDef color){
 
 		ws2812_set_color_rgb(&neopixel, led_buf, 16, color_t);
 		ws2812_write(&neopixel);
-		HAL_Delay(40);
+		HAL_Delay(400);
 	}
 }
 
 void circular_rainbow(double rotation_time, int rotations){
-	int led_buf[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-	int led_delta_hue = 360/16;
+	int led_buf[NEOPIXEL_NUM] = {0};
+	for(int i=0; i<NEOPIXEL_NUM; i++){
+		led_buf[i] = i;
+	}
+//	int led_delta_hue = 360/16;
 	uint32_t delay_period = (uint32_t)(1000 * rotation_time / 360.0);
 	WS2812_HSVTypeDef hsv={0,1,1};
 	for(int j=0; j<rotations; j++){
 		for(int i=1;i<360;i+=1){
 			hsv.h = (double)i;
-			ws2812_set_color_hsv(&neopixel, led_buf, 16, hsv);
+			ws2812_set_color_hsv(&neopixel, led_buf, NEOPIXEL_NUM, hsv);
 			ws2812_write(&neopixel);
 			HAL_Delay(delay_period);
 		}
